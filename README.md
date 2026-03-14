@@ -133,7 +133,7 @@ k8s-investigate exporter --exclude-namespace kube-system
 docker build -t k8s-investigate .
 docker run --rm -v ~/.kube/config:/root/.kube/config k8s-investigate scan all
 ```
-
+ 
 ## Helm
 
 ```bash
