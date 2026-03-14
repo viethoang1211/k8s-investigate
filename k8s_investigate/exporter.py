@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import logging
-import threading
 import time
 
 from prometheus_client import Gauge, start_http_server
 
 from k8s_investigate.config import ScanOptions
 from k8s_investigate.k8s_client import K8sClient
-from k8s_investigate.scanner import UnusedResource, get_all_scanners, get_cluster_scanners, get_namespaced_scanners
+from k8s_investigate.scanner import UnusedResource, get_cluster_scanners, get_namespaced_scanners
 
 logger = logging.getLogger(__name__)
 

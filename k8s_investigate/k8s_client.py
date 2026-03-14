@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from kubernetes import client, config as k8s_config
+from kubernetes import client
+from kubernetes import config as k8s_config
 
 from k8s_investigate.config import ScanOptions
 

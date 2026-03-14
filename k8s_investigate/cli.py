@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import sys
 
 import click
 from rich.console import Console
@@ -16,8 +15,6 @@ from k8s_investigate.k8s_client import K8sClient
 from k8s_investigate.scanner import (
     UnusedResource,
     get_all_scanners,
-    get_cluster_scanners,
-    get_namespaced_scanners,
     get_scanner,
 )
 
@@ -91,7 +88,7 @@ def _build_opts(ctx: click.Context) -> ScanOptions:
     # Labels
     excl_labels = params.get("exclude_labels")
     if excl_labels:
-        opts.exclude_labels = [l.strip() for l in excl_labels.split(",")]
+        opts.exclude_labels = [lbl.strip() for lbl in excl_labels.split(",")]
     incl_labels = params.get("include_labels")
     if incl_labels:
         opts.include_labels = incl_labels
@@ -160,7 +157,15 @@ def _run_scan(opts: ScanOptions, resource_types: list[str]) -> list[UnusedResour
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output.")
 @click.pass_context
 def main(ctx: click.Context, kubeconfig: str, context: str, verbose: bool) -> None:
-    """K8s Investigate - Find and clean up unused Kubernetes resources."""
+    """K8s Investigate - Find and clean up unused Kubernetes resources.
+
+    \b
+    Examples:
+      k8s-investigate scan all
+      k8s-investigate scan cm,secrets -n default --show-reason
+      k8s-investigate scan all -o json --exclude-namespace kube-system
+      k8s-investigate exporter --port 8080 --interval 300
+    """
     ctx.ensure_object(dict)
     ctx.obj["kubeconfig"] = kubeconfig
     ctx.obj["context"] = context
@@ -189,7 +194,29 @@ def scan(ctx: click.Context, resources: str, **kwargs) -> None:
     """Scan for unused Kubernetes resources.
 
     RESOURCES can be 'all' or a comma-separated list of resource types.
-    Examples: configmaps, secrets, cm,svc,deploy, all
+
+    \b
+    Examples:
+      k8s-investigate scan all                          # Scan everything
+      k8s-investigate scan configmaps                   # Scan only ConfigMaps
+      k8s-investigate scan cm,secrets,svc               # Multiple types (short names)
+      k8s-investigate scan all -n default               # Only default namespace
+      k8s-investigate scan all -n dev,staging            # Multiple namespaces
+      k8s-investigate scan all --exclude-namespace kube-system,kube-public
+      k8s-investigate scan all --older-than 7d           # Only resources older than 7 days
+      k8s-investigate scan all --show-reason             # Show why each resource is unused
+      k8s-investigate scan all -o json                   # JSON output
+      k8s-investigate scan all -o yaml > report.yaml     # Save YAML report
+      k8s-investigate scan all --group-by resource       # Group by resource type
+      k8s-investigate scan all --delete                  # Delete with confirmation
+      k8s-investigate scan all --delete --yes            # Delete without confirmation
+
+    \b
+    Resource type short names:
+      cm=ConfigMaps  svc=Services  deploy=Deployments  sts=StatefulSets
+      ds=DaemonSets  rs=ReplicaSets  ing=Ingresses  sa=ServiceAccounts
+      rb=RoleBindings  crb=ClusterRoleBindings  sc=StorageClasses
+      pc=PriorityClasses  netpol=NetworkPolicies  pdb=PDBs
     """
     # Merge params into context
     ctx.obj.update(kwargs)
@@ -225,7 +252,14 @@ def scan(ctx: click.Context, resources: str, **kwargs) -> None:
 @click.option("--exclude-namespace", help="Namespace(s) to exclude, comma-separated.")
 @click.pass_context
 def exporter(ctx: click.Context, port: int, interval: int, **kwargs) -> None:
-    """Run as Prometheus metrics exporter."""
+    """Run as Prometheus metrics exporter.
+
+    \b
+    Examples:
+      k8s-investigate exporter                           # Default: port 8080, 10min interval
+      k8s-investigate exporter --port 9090 --interval 300
+      k8s-investigate exporter --exclude-namespace kube-system
+    """
     ctx.obj.update(kwargs)
     opts = _build_opts(ctx)
     console.print(f"[bold]Starting Prometheus exporter on port {port}...[/bold]")

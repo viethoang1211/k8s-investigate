@@ -4,18 +4,26 @@ A Python-based tool to discover and clean up unused Kubernetes resources in your
 
 ## Features
 
-- **20+ resource type scanners**: ConfigMaps, Secrets, Services, Deployments, StatefulSets, Pods, Ingresses, PVCs, PVs, Roles, ClusterRoles, RoleBindings, ClusterRoleBindings, ServiceAccounts, HPAs, Jobs, ReplicaSets, DaemonSets, PDBs, NetworkPolicies, StorageClasses, PriorityClasses
+- **22 resource type scanners**: ConfigMaps, Secrets, Services, Deployments, StatefulSets, Pods, Ingresses, PVCs, PVs, Roles, ClusterRoles, RoleBindings, ClusterRoleBindings, ServiceAccounts, HPAs, Jobs, ReplicaSets, DaemonSets, PDBs, NetworkPolicies, StorageClasses, PriorityClasses
 - **Multiple output formats**: Table (rich), JSON, YAML
 - **Label-based filtering**: Include/exclude resources by labels
 - **Age-based filtering**: Find resources older or newer than a threshold
 - **Namespace filtering**: Scan specific namespaces or exclude namespaces
 - **Deletion support**: Optionally delete unused resources (with confirmation)
 - **Prometheus metrics**: Export orphaned resource metrics for monitoring
-- **Annotation override**: Mark resources with `k8s-investigate/used: "false"` to force-flag them
+- **Label override**: Mark resources with `k8s-investigate/used: "false"` to force-flag them
 
 ## Installation
 
 ```bash
+pip install k8s-investigate
+```
+
+Or install from source:
+
+```bash
+git clone https://github.com/<org>/k8s-investigate.git
+cd k8s-investigate
 pip install .
 ```
 
@@ -25,38 +33,71 @@ pip install .
 pip install -e ".[dev]"
 ```
 
-## Usage
+## Quick Start
 
 ```bash
-# Scan all resource types in all namespaces
+# Scan all resource types across all namespaces
 k8s-investigate scan all
 
-# Scan specific resource type
+# Scan with reasons why each resource is unused
+k8s-investigate scan all --show-reason
+```
+
+## Usage
+
+### Scan specific resource types
+
+```bash
+# Single resource type
 k8s-investigate scan configmaps
 k8s-investigate scan secrets --namespace default
 
-# Filter by namespace
-k8s-investigate scan all --namespace kube-system
+# Multiple types using short names
+k8s-investigate scan cm,svc,deploy,sa
+```
+
+**Short names**: `cm`=ConfigMaps, `svc`=Services, `deploy`=Deployments, `sts`=StatefulSets, `ds`=DaemonSets, `rs`=ReplicaSets, `ing`=Ingresses, `sa`=ServiceAccounts, `rb`=RoleBindings, `crb`=ClusterRoleBindings, `sc`=StorageClasses, `pc`=PriorityClasses, `netpol`=NetworkPolicies, `pdb`=PDBs
+
+### Filter by namespace
+
+```bash
+k8s-investigate scan all -n default
+k8s-investigate scan all -n dev,staging,production
 k8s-investigate scan all --exclude-namespace kube-system,kube-public
+```
 
-# Filter by age
-k8s-investigate scan all --older-than 24h
-k8s-investigate scan all --newer-than 1h
+### Filter by age
 
-# Output formats
-k8s-investigate scan all --output json
-k8s-investigate scan all --output yaml
-k8s-investigate scan all --output table
+```bash
+k8s-investigate scan all --older-than 7d      # Only resources older than 7 days
+k8s-investigate scan all --newer-than 1h      # Only resources created in last hour
+k8s-investigate scan all --older-than 1d12h   # Supports combined durations
+```
 
-# Show reasons why resources are considered unused
-k8s-investigate scan all --show-reason
+### Output formats
 
-# Delete unused resources (with confirmation)
-k8s-investigate scan all --delete
-k8s-investigate scan all --delete --yes  # Skip confirmation
+```bash
+k8s-investigate scan all -o table             # Rich table (default)
+k8s-investigate scan all -o json              # JSON output
+k8s-investigate scan all -o yaml              # YAML output
+k8s-investigate scan all -o json > report.json  # Save to file
+k8s-investigate scan all --group-by resource  # Group by type instead of namespace
+```
 
-# Run Prometheus exporter
-k8s-investigate exporter --port 8080 --interval 600
+### Delete unused resources
+
+```bash
+k8s-investigate scan all --delete             # Interactive confirmation
+k8s-investigate scan all --delete --yes       # Skip confirmation (use with caution!)
+k8s-investigate scan cm,secrets -n staging --delete  # Delete specific types in namespace
+```
+
+### Prometheus exporter
+
+```bash
+k8s-investigate exporter                      # Default: port 8080, 10min interval
+k8s-investigate exporter --port 9090 --interval 300
+k8s-investigate exporter --exclude-namespace kube-system
 ```
 
 ## Supported Resource Types
