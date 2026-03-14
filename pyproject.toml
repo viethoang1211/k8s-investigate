@@ -5,6 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "k8s-investigate"
 version = "0.1.0"
+authors = [
+  { name="Viet Hoang", email="viethoangwork1211@gmail.com" },
+]
 description = "Kubernetes orphaned resources finder and cleaner"
 readme = "README.md"
 license = {text = "MIT"}
