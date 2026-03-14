@@ -1,0 +1,32 @@
+name: Helm Chart Release
+
+on:
+  push:
+    tags:
+      - 'helm-*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Package Helm chart
+        run: helm package charts/k8s-purify
+
+      - name: Upload chart as release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: k8s-purify-*.tgz
