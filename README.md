@@ -1,4 +1,4 @@
-# K8s Purify - Kubernetes Orphaned Resources Finder
+# K8s Investigate - Kubernetes Orphaned Resources Finder
 
 A Python-based tool to discover and clean up unused Kubernetes resources in your cluster.
 
@@ -11,7 +11,7 @@ A Python-based tool to discover and clean up unused Kubernetes resources in your
 - **Namespace filtering**: Scan specific namespaces or exclude namespaces
 - **Deletion support**: Optionally delete unused resources (with confirmation)
 - **Prometheus metrics**: Export orphaned resource metrics for monitoring
-- **Annotation override**: Mark resources with `k8s-purify/used: "false"` to force-flag them
+- **Annotation override**: Mark resources with `k8s-investigate/used: "false"` to force-flag them
 
 ## Installation
 
@@ -29,34 +29,34 @@ pip install -e ".[dev]"
 
 ```bash
 # Scan all resource types in all namespaces
-k8s-purify scan all
+k8s-investigate scan all
 
 # Scan specific resource type
-k8s-purify scan configmaps
-k8s-purify scan secrets --namespace default
+k8s-investigate scan configmaps
+k8s-investigate scan secrets --namespace default
 
 # Filter by namespace
-k8s-purify scan all --namespace kube-system
-k8s-purify scan all --exclude-namespace kube-system,kube-public
+k8s-investigate scan all --namespace kube-system
+k8s-investigate scan all --exclude-namespace kube-system,kube-public
 
 # Filter by age
-k8s-purify scan all --older-than 24h
-k8s-purify scan all --newer-than 1h
+k8s-investigate scan all --older-than 24h
+k8s-investigate scan all --newer-than 1h
 
 # Output formats
-k8s-purify scan all --output json
-k8s-purify scan all --output yaml
-k8s-purify scan all --output table
+k8s-investigate scan all --output json
+k8s-investigate scan all --output yaml
+k8s-investigate scan all --output table
 
 # Show reasons why resources are considered unused
-k8s-purify scan all --show-reason
+k8s-investigate scan all --show-reason
 
 # Delete unused resources (with confirmation)
-k8s-purify scan all --delete
-k8s-purify scan all --delete --yes  # Skip confirmation
+k8s-investigate scan all --delete
+k8s-investigate scan all --delete --yes  # Skip confirmation
 
 # Run Prometheus exporter
-k8s-purify exporter --port 8080 --interval 600
+k8s-investigate exporter --port 8080 --interval 600
 ```
 
 ## Supported Resource Types
@@ -89,12 +89,12 @@ k8s-purify exporter --port 8080 --interval 600
 ## Docker
 
 ```bash
-docker build -t k8s-purify .
-docker run --rm -v ~/.kube/config:/root/.kube/config k8s-purify scan all
+docker build -t k8s-investigate .
+docker run --rm -v ~/.kube/config:/root/.kube/config k8s-investigate scan all
 ```
 
 ## Helm
 
 ```bash
-helm install k8s-purify ./charts/k8s-purify --namespace k8s-purify --create-namespace
+helm install k8s-investigate ./charts/k8s-investigate --namespace k8s-investigate --create-namespace
 ```

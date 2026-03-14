@@ -1,6 +1,0 @@
-apiVersion: v2
-name: k8s-purify
-description: Helm chart for k8s-purify - Kubernetes orphaned resources finder
-type: application
-version: 0.1.0
-appVersion: "0.1.0"

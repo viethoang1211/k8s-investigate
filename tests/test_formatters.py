@@ -4,8 +4,8 @@ import json
 
 import yaml
 
-from k8s_purify.formatters import format_results
-from k8s_purify.scanner import UnusedResource
+from k8s_investigate.formatters import format_results
+from k8s_investigate.scanner import UnusedResource
 
 
 def _sample_results():

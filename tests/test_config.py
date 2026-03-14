@@ -4,7 +4,7 @@ from datetime import timedelta
 
 import pytest
 
-from k8s_purify.config import ScanOptions, parse_duration
+from k8s_investigate.config import ScanOptions, parse_duration
 
 
 class TestParseDuration:

@@ -3,8 +3,8 @@
 from unittest.mock import MagicMock
 from datetime import datetime, timezone, timedelta
 
-from k8s_purify.config import ScanOptions
-from k8s_purify.scanner import (
+from k8s_investigate.config import ScanOptions
+from k8s_investigate.scanner import (
     BaseScanner, UnusedResource, register_scanner,
     get_scanner, get_all_scanners, _registry,
 )
@@ -21,7 +21,7 @@ class TestBaseScanner:
         opts = ScanOptions()
         scanner = MagicMock(spec=BaseScanner)
         scanner.opts = opts
-        meta = self._make_metadata(labels={"k8s-purify/used": "false"})
+        meta = self._make_metadata(labels={"k8s-investigate/used": "false"})
         assert BaseScanner.is_marked_unused(scanner, meta) is True
 
     def test_is_not_marked_unused(self):
@@ -67,7 +67,7 @@ class TestBaseScanner:
 class TestRegistry:
     def test_registered_scanners(self):
         # Import to trigger registration
-        import k8s_purify.scanners  # noqa: F401
+        import k8s_investigate.scanners  # noqa: F401
         scanners = get_all_scanners()
         assert "configmaps" in scanners
         assert "secrets" in scanners
@@ -78,7 +78,7 @@ class TestRegistry:
         assert "clusterroles" in scanners
 
     def test_get_scanner(self):
-        import k8s_purify.scanners  # noqa: F401
+        import k8s_investigate.scanners  # noqa: F401
         cls = get_scanner("configmaps")
         assert cls is not None
         assert cls.resource_type == "configmaps"

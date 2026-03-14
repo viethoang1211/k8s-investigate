@@ -1,0 +1,51 @@
+{{- if eq .Values.mode "cronjob" }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "k8s-investigate.fullname" . }}
+  labels:
+    {{- include "k8s-investigate.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.cronjob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.cronjob.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "k8s-investigate.selectorLabels" . | nindent 12 }}
+        spec:
+          serviceAccountName: {{ include "k8s-investigate.fullname" . }}
+          restartPolicy: Never
+          containers:
+            - name: k8s-investigate
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              args:
+                - scan
+                - {{ .Values.scan.resources }}
+                - --output
+                - {{ .Values.scan.output }}
+                {{- if .Values.scan.showReason }}
+                - --show-reason
+                {{- end }}
+                {{- if .Values.scan.excludeNamespaces }}
+                - --exclude-namespace
+                - {{ .Values.scan.excludeNamespaces }}
+                {{- end }}
+                {{- if .Values.scan.olderThan }}
+                - --older-than
+                - {{ .Values.scan.olderThan }}
+                {{- end }}
+                {{- if .Values.scan.delete }}
+                - --delete
+                - --yes
+                {{- end }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

@@ -24,9 +24,9 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Package Helm chart
-        run: helm package charts/k8s-purify
+        run: helm package charts/k8s-investigate
 
       - name: Upload chart as release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: k8s-purify-*.tgz
+          files: k8s-investigate-*.tgz
