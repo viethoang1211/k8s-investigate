@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "k8s-investigate"
-version = "0.1.0"
+version = "0.4.0"
 authors = [
   { name="Viet Hoang", email="viethoangwork1211@gmail.com" },
 ]
