@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from k8s_investigate.scanner import BaseScanner, UnusedResource, register_scanner
 
+# Annotations/labels indicating a system-managed StorageClass
+_DEFAULT_SC_ANNOTATION = "storageclass.kubernetes.io/is-default-class"
+_BETA_DEFAULT_SC_ANNOTATION = "storageclass.beta.kubernetes.io/is-default-class"
+
 
 @register_scanner
 class StorageClassScanner(BaseScanner):
@@ -26,6 +30,11 @@ class StorageClassScanner(BaseScanner):
 
         for sc in storage_classes:
             if self.should_skip(sc.metadata):
+                continue
+            # Skip the default StorageClass — it is required by the cluster
+            annotations = sc.metadata.annotations or {}
+            if annotations.get(_DEFAULT_SC_ANNOTATION) == "true" or \
+               annotations.get(_BETA_DEFAULT_SC_ANNOTATION) == "true":
                 continue
             if self.is_marked_unused(sc.metadata):
                 results.append(UnusedResource(

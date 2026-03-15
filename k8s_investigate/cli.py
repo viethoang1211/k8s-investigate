@@ -6,6 +6,7 @@ import logging
 
 import click
 from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
 
 from k8s_investigate import __version__
 from k8s_investigate.config import ScanOptions, parse_duration
@@ -72,7 +73,7 @@ def _build_opts(ctx: click.Context) -> ScanOptions:
         kubeconfig=params.get("kubeconfig"),
         context=params.get("context"),
         output_format=params.get("output", "table"),
-        show_reason=params.get("show_reason", False),
+        show_reason=not params.get("hide_reason", False),
         delete=params.get("delete", False),
         yes=params.get("yes", False),
         verbose=params.get("verbose", False),
@@ -123,28 +124,43 @@ def _run_scan(opts: ScanOptions, resource_types: list[str]) -> list[UnusedResour
         else:
             cluster_types.append(rt)
 
-    # Run cluster-scoped scanners once
-    for rt in cluster_types:
-        scanner_cls = get_scanner(rt)
-        if scanner_cls:
-            try:
-                scanner = scanner_cls(k8s, opts)
-                all_results.extend(scanner.scan())
-            except Exception as e:
-                console.print(f"[red]Error scanning {rt}: {e}[/red]")
+    # Calculate total steps for progress bar
+    namespaces = k8s.get_namespaces(opts) if ns_types else []
+    total_steps = len(cluster_types) + len(ns_types) * len(namespaces)
 
-    # Run namespaced scanners per namespace
-    if ns_types:
-        namespaces = k8s.get_namespaces(opts)
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Scanning resources...", total=total_steps)
+
+        # Run cluster-scoped scanners once
+        for rt in cluster_types:
+            scanner_cls = get_scanner(rt)
+            if scanner_cls:
+                progress.update(task, description=f"Scanning {rt}...")
+                try:
+                    scanner = scanner_cls(k8s, opts)
+                    all_results.extend(scanner.scan())
+                except Exception as e:
+                    console.print(f"[red]Error scanning {rt}: {e}[/red]")
+                progress.advance(task)
+
+        # Run namespaced scanners per namespace
         for ns in namespaces:
             for rt in ns_types:
                 scanner_cls = get_scanner(rt)
                 if scanner_cls:
+                    progress.update(task, description=f"Scanning {rt} in {ns}...")
                     try:
                         scanner = scanner_cls(k8s, opts)
                         all_results.extend(scanner.scan(ns))
                     except Exception as e:
                         console.print(f"[red]Error scanning {rt} in {ns}: {e}[/red]")
+                    progress.advance(task)
             k8s.clear_cache()
 
     return all_results
@@ -184,7 +200,7 @@ def main(ctx: click.Context, kubeconfig: str, context: str, verbose: bool) -> No
 @click.option("--include-labels", help="Label selector to include (key=value).")
 @click.option("--older-than", help="Only show resources older than duration (e.g. 24h, 7d).")
 @click.option("--newer-than", help="Only show resources newer than duration.")
-@click.option("--show-reason", is_flag=True, help="Show reason why resource is unused.")
+@click.option("--hide-reason", is_flag=True, help="Hide reason column from output.")
 @click.option("--group-by", type=click.Choice(["namespace", "resource"]), default="namespace",
               help="Group output by namespace or resource type.")
 @click.option("--delete", is_flag=True, help="Delete unused resources.")
@@ -204,7 +220,7 @@ def scan(ctx: click.Context, resources: str, **kwargs) -> None:
       k8s-investigate scan all -n dev,staging            # Multiple namespaces
       k8s-investigate scan all --exclude-namespace kube-system,kube-public
       k8s-investigate scan all --older-than 7d           # Only resources older than 7 days
-      k8s-investigate scan all --show-reason             # Show why each resource is unused
+      k8s-investigate scan all --hide-reason              # Hide reason column
       k8s-investigate scan all -o json                   # JSON output
       k8s-investigate scan all -o yaml > report.yaml     # Save YAML report
       k8s-investigate scan all --group-by resource       # Group by resource type

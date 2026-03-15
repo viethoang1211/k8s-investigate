@@ -35,7 +35,7 @@ class ScanOptions:
     older_than: timedelta | None = None
     newer_than: timedelta | None = None
     output_format: str = "table"
-    show_reason: bool = False
+    show_reason: bool = True
     delete: bool = False
     yes: bool = False
     verbose: bool = False

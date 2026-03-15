@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from k8s_investigate.scanner import BaseScanner, UnusedResource, register_scanner
 
+# ConfigMaps managed by the Kubernetes system — should never be flagged
+_SYSTEM_CONFIGMAPS = {
+    "kube-root-ca.crt",
+}
+
 
 def _get_used_configmaps(pods: list) -> set[str]:
     """Extract all ConfigMap names referenced by pods."""
@@ -44,6 +49,8 @@ class ConfigMapScanner(BaseScanner):
 
         for cm in configmaps:
             if self.should_skip(cm.metadata):
+                continue
+            if cm.metadata.name in _SYSTEM_CONFIGMAPS:
                 continue
             if self.is_marked_unused(cm.metadata):
                 results.append(UnusedResource(

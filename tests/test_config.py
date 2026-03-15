@@ -38,6 +38,6 @@ class TestScanOptions:
         assert opts.output_format == "table"
         assert opts.group_by == "namespace"
         assert opts.delete is False
-        assert opts.show_reason is False
+        assert opts.show_reason is True
         assert opts.namespaces == []
         assert opts.exclude_namespaces == []
