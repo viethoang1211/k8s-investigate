@@ -6,7 +6,7 @@ import logging
 
 import click
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn
 
 from k8s_investigate import __version__
 from k8s_investigate.config import ScanOptions, parse_duration
