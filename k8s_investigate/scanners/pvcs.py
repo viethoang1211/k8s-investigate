@@ -21,6 +21,14 @@ def _get_used_pvcs(pods: list) -> set[str]:
     return used
 
 
+def _is_owned_by_statefulset(metadata) -> bool:
+    """Return True if the resource is owned by a StatefulSet."""
+    for ref in metadata.owner_references or []:
+        if ref.kind == "StatefulSet":
+            return True
+    return False
+
+
 @register_scanner
 class PVCScanner(BaseScanner):
     resource_type = "pvcs"
@@ -40,6 +48,8 @@ class PVCScanner(BaseScanner):
                     namespace=namespace, resource_type="PVC",
                     name=pvc.metadata.name, reason="Marked as unused via label",
                 ))
+                continue
+            if _is_owned_by_statefulset(pvc.metadata):
                 continue
             if pvc.metadata.name not in used_pvcs:
                 results.append(UnusedResource(

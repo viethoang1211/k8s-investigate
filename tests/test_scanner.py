@@ -85,3 +85,99 @@ class TestRegistry:
 
     def test_get_unknown_scanner(self):
         assert get_scanner("nonexistent") is None
+
+
+class TestPVCScanner:
+    def _make_owner_ref(self, kind: str):
+        ref = MagicMock()
+        ref.kind = kind
+        return ref
+
+    def _make_pvc(self, name: str, owner_refs=None):
+        pvc = MagicMock()
+        pvc.metadata.name = name
+        pvc.metadata.labels = {}
+        pvc.metadata.annotations = {}
+        pvc.metadata.owner_references = owner_refs or []
+        return pvc
+
+    def _make_pod_with_pvc(self, pvc_name: str):
+        vol = MagicMock()
+        vol.persistent_volume_claim = MagicMock()
+        vol.persistent_volume_claim.claim_name = pvc_name
+        vol.ephemeral = None
+        pod = MagicMock()
+        pod.spec.volumes = [vol]
+        return pod
+
+    def test_pvc_owned_by_statefulset_excluded(self):
+        """PVCs owned by a StatefulSet must not be reported even when no pods run."""
+        from k8s_investigate.scanners.pvcs import PVCScanner
+        from k8s_investigate.config import ScanOptions
+
+        sts_ref = self._make_owner_ref("StatefulSet")
+        pvc = self._make_pvc("data-db-0", owner_refs=[sts_ref])
+
+        k8s = MagicMock()
+        k8s.list_pods_cached.return_value = []  # no running pods
+        k8s.core_v1.list_namespaced_persistent_volume_claim.return_value.items = [pvc]
+
+        scanner = PVCScanner(k8s=k8s, opts=ScanOptions())
+        results = scanner.scan(namespace="default")
+
+        assert results == [], (
+            "PVC owned by a StatefulSet should not be reported as unused"
+        )
+
+    def test_pvc_not_owned_by_statefulset_reported(self):
+        """Orphan PVCs (no owner, not mounted) must still be reported."""
+        from k8s_investigate.scanners.pvcs import PVCScanner
+        from k8s_investigate.config import ScanOptions
+
+        pvc = self._make_pvc("orphan-pvc", owner_refs=[])
+
+        k8s = MagicMock()
+        k8s.list_pods_cached.return_value = []
+        k8s.core_v1.list_namespaced_persistent_volume_claim.return_value.items = [pvc]
+
+        scanner = PVCScanner(k8s=k8s, opts=ScanOptions())
+        results = scanner.scan(namespace="default")
+
+        assert len(results) == 1
+        assert results[0].name == "orphan-pvc"
+
+    def test_pvc_owned_by_other_kind_still_checked(self):
+        """PVCs owned by a non-StatefulSet owner (e.g. Job) are still checked."""
+        from k8s_investigate.scanners.pvcs import PVCScanner
+        from k8s_investigate.config import ScanOptions
+
+        job_ref = self._make_owner_ref("Job")
+        pvc = self._make_pvc("job-pvc", owner_refs=[job_ref])
+
+        k8s = MagicMock()
+        k8s.list_pods_cached.return_value = []
+        k8s.core_v1.list_namespaced_persistent_volume_claim.return_value.items = [pvc]
+
+        scanner = PVCScanner(k8s=k8s, opts=ScanOptions())
+        results = scanner.scan(namespace="default")
+
+        assert len(results) == 1
+        assert results[0].name == "job-pvc"
+
+    def test_pvc_owned_by_statefulset_and_mounted(self):
+        """PVC owned by a StatefulSet that is also mounted is safely excluded once."""
+        from k8s_investigate.scanners.pvcs import PVCScanner
+        from k8s_investigate.config import ScanOptions
+
+        sts_ref = self._make_owner_ref("StatefulSet")
+        pvc = self._make_pvc("data-db-0", owner_refs=[sts_ref])
+        pod = self._make_pod_with_pvc("data-db-0")
+
+        k8s = MagicMock()
+        k8s.list_pods_cached.return_value = [pod]
+        k8s.core_v1.list_namespaced_persistent_volume_claim.return_value.items = [pvc]
+
+        scanner = PVCScanner(k8s=k8s, opts=ScanOptions())
+        results = scanner.scan(namespace="default")
+
+        assert results == []
