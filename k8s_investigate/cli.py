@@ -178,7 +178,7 @@ def main(ctx: click.Context, kubeconfig: str, context: str, verbose: bool) -> No
     \b
     Examples:
       k8s-investigate scan all
-      k8s-investigate scan cm,secrets -n default --show-reason
+      k8s-investigate scan cm,secrets -n default --hide-reason
       k8s-investigate scan all -o json --exclude-namespace kube-system
       k8s-investigate exporter --port 8080 --interval 300
     """

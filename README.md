@@ -39,8 +39,8 @@ pip install -e ".[dev]"
 # Scan all resource types across all namespaces
 k8s-investigate scan all
 
-# Scan with reasons why each resource is unused
-k8s-investigate scan all --show-reason
+# Hide the reason column from output
+k8s-investigate scan all --hide-reason
 ```
 
 ## Usage
