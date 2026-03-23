@@ -1,3 +1,8 @@
 """K8s Investigate - Kubernetes Orphaned Resources Finder."""
 
-__version__ = "0.5.0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("k8s-investigate")
+except PackageNotFoundError:
+    __version__ = "unknown"
